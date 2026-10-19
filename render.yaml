@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: hsg-tin-hoc-ai-preview
+    runtime: python
+    plan: free
+    rootDir: HSG_Tin_Hoc_AI
+    buildCommand: "python -m py_compile app.py"
+    startCommand: "python app.py"
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: HSG_PUBLIC_PREVIEW
+        value: '1'
+      - key: HSG_SECRET
+        generateValue: true
+      - key: HSG_PREVIEW_PASSWORD
+        sync: false
+      - key: JUDGE0_URL
+        sync: false
+      - key: JUDGE0_API_KEY
+        sync: false
+      - key: JUDGE0_AUTH_HEADER
+        value: X-RapidAPI-Key
+      - key: JUDGE0_HOST
+        sync: false
