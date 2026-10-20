@@ -1,0 +1,19 @@
+CẤU HÌNH JUDGE0 - KHÔNG GỬI API KEY CHO NGƯỜI KHÁC
+
+1) Thuê hoặc tự cài đặt máy chủ Judge0 có hỗ trợ C++, Python và Free Pascal.
+2) Mở Command Prompt (CMD) trong thư mục HSG_Tin_Hoc_AI.
+3) Nhập các lệnh sau (thay URL và khóa của bạn):
+
+set JUDGE0_URL=https://judge0-cua-ban.example
+set JUDGE0_API_KEY=YOUR_KEY_IF_REQUIRED
+CHAY_UNG_DUNG.bat
+
+Nếu dịch vụ không cần khóa API, bỏ dòng JUDGE0_API_KEY.
+Nếu dùng gateway cần tên header khác, có thể khai báo JUDGE0_AUTH_HEADER hoặc JUDGE0_HOST.
+Cần khởi chạy .bat trong CÙNG CỬA SỔ CMD sau khi set, nếu không biến môi trường không được truyền sang ứng dụng.
+4) Vào mục Kiểm tra Judge0, nhấn Kiểm tra kết nối; xác nhận các ngôn ngữ.
+5) Dùng bài số nguyên tố, chạy thử và nộp code để xác nhận có điểm từ bộ test.
+
+LƯU Ý: Đây là bản chạy nội bộ trên máy cá nhân; không tự vận hành server public,
+không chạy code học sinh bằng Python subprocess trong máy dữ liệu. Máy Judge0 phải
+cách ly mã nguồn và được cập nhật bản vá. Chỉ tự lưu trữ khi có người quản trị kỹ thuật.
