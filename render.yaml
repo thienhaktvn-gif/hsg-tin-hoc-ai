@@ -3,7 +3,7 @@ services:
     name: hsg-tin-hoc-ai-preview
     runtime: python
     plan: free
-    rootDir: HSG_Tin_Hoc_AI_SUA_LOI_RENDER_THIEU_THU_MUC/HSG_Tin_Hoc_AI
+    rootDir: HSG_Tin_Hoc_AI
     buildCommand: "python -m py_compile app.py"
     startCommand: "python app.py"
     envVars:
@@ -14,4 +14,12 @@ services:
       - key: HSG_SECRET
         generateValue: true
       - key: HSG_PREVIEW_PASSWORD
+        sync: false
+      - key: JUDGE0_URL
+        sync: false
+      - key: JUDGE0_API_KEY
+        sync: false
+      - key: JUDGE0_AUTH_HEADER
+        value: X-RapidAPI-Key
+      - key: JUDGE0_HOST
         sync: false
