@@ -64,6 +64,34 @@ CREATE INDEX IF NOT EXISTS idx_tests_problem ON test_cases(problem_id);''')
    c.execute("INSERT INTO contests(title,description,created_by) VALUES('Đề thử HSG Tin học lớp 9','Mẫu đề để bổ sung 4 bài, mỗi bài 5 điểm.',1)")
    c.execute('INSERT INTO contest_problems VALUES(1,1,1)');c.execute('INSERT INTO contest_problems VALUES(1,2,2)')
   seed_extra(c)
+  if PUBLIC_PREVIEW:seed_preview_evidence(c)
+
+
+def seed_preview_evidence(c):
+ """Illustrative records for contest demonstration; NEVER actual grading or learner scores."""
+ c.execute("""CREATE TABLE IF NOT EXISTS demo_judge_events(id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),problem_id INTEGER NOT NULL REFERENCES problems(id),
+  language TEXT NOT NULL,verdict TEXT NOT NULL,score REAL NOT NULL,created_at TEXT NOT NULL)""")
+ teacher=c.execute("SELECT id FROM users WHERE username='giaovien' AND role='teacher'").fetchone()
+ student=c.execute("SELECT id FROM users WHERE username='hocsinh' AND role='student'").fetchone()
+ if not teacher or not student:return
+ teacher,student=teacher[0],student[0]
+ row=c.execute("SELECT id FROM classes WHERE teacher_id=? AND join_code='DEMO2026'",(teacher,)).fetchone()
+ if row:cid=row[0]
+ else:cid=c.execute("INSERT INTO classes(name,join_code,teacher_id) VALUES('Lớp bồi dưỡng HSG 9 – MINH HỌA','DEMO2026',?)",(teacher,)).lastrowid
+ c.execute('INSERT OR IGNORE INTO class_members(class_id,student_id) VALUES(?,?)',(cid,student))
+ sample=[('Buổi 1 · Số học và điều kiện',[1,7,8]),('Buổi 2 · Xâu và mảng',[4,11,12]),('Buổi 3 · Dãy số và tìm kiếm',[2,6,20])]
+ for title,ids in sample:
+  row=c.execute('SELECT id FROM assignments WHERE class_id=? AND title=?',(cid,title)).fetchone()
+  if row:aid=row[0]
+  else:aid=c.execute('INSERT INTO assignments(class_id,title,due_at) VALUES(?,?,NULL)',(cid,title)).lastrowid
+  for pid in ids:
+   if c.execute('SELECT 1 FROM problems WHERE id=?',(pid,)).fetchone():c.execute('INSERT OR IGNORE INTO assignment_problems(assignment_id,problem_id) VALUES(?,?)',(aid,pid))
+ if c.execute('SELECT 1 FROM demo_judge_events WHERE user_id=?',(student,)).fetchone():return
+ rows=[(1,'cpp','AC',5,'2026-10-15 08:12'),(7,'python','WA',2,'2026-10-15 08:26'),(7,'python','AC',5,'2026-10-15 08:39'),(4,'cpp','AC',5,'2026-10-16 09:10'),(6,'pascal','CE',0,'2026-10-17 14:05'),(6,'pascal','AC',5,'2026-10-17 14:32'),(2,'cpp','TLE',0,'2026-10-18 10:01'),(2,'cpp','WA',3,'2026-10-18 10:25')]
+ for pid,lang,v,score,at in rows:
+  if c.execute('SELECT 1 FROM problems WHERE id=?',(pid,)).fetchone():
+   c.execute('INSERT INTO demo_judge_events(user_id,problem_id,language,verdict,score,created_at) VALUES(?,?,?,?,?,?)',(student,pid,lang,v,score,at))
 
 def seed_extra(c):
  rows=[(1, 'Tổng N số tự nhiên', 'Tính 1+2+...+N với N không âm.', 'N (0 ≤ N ≤ 10^9)', 'Một số nguyên biểu diễn tổng.', '5', '15', 'Cơ bản', [('0', '0'), ('10', '55'), ('100', '5050')]), (1, 'Kiểm tra năm nhuận', 'Cho năm Y dương, in YES nếu là năm nhuận, ngược lại NO.', 'Một số nguyên Y từ 1 đến 100000', 'YES hoặc NO', '2024', 'YES', 'Cơ bản', [('1900', 'NO'), ('2000', 'YES'), ('2023', 'NO')]), (1, 'Tổng các chữ số', 'Tính tổng các chữ số thập phân của N.', 'N nguyên không âm (N ≤ 10^18)', 'Tổng chữ số', '12345', '15', 'Cơ bản', [('0', '0'), ('9999', '36'), ('10020', '3')]), (1, 'Ước chung lớn nhất', 'Cho hai số nguyên không âm A,B, tìm UCLN; giả sử ít nhất một số khác 0.', 'A B (0 ≤ A,B ≤ 10^9)', 'UCLN(A,B)', '18 24', '6', 'Vận dụng', [('7 13', '1'), ('100 25', '25'), ('0 10', '10')]), (2, 'Số chính phương', 'Cho N không âm, xác định N có phải số chính phương.', 'Một số nguyên N (0 ≤ N ≤ 10^12)', 'YES hoặc NO', '49', 'YES', 'Cơ bản', [('0', 'YES'), ('15', 'NO'), ('1000000', 'YES')]), (2, 'Đếm ước số', 'Đếm số ước nguyên dương của N.', 'Một số N (1 ≤ N ≤ 10^9)', 'Số ước dương', '12', '6', 'Vận dụng', [('1', '1'), ('36', '9'), ('97', '2')]), (2, 'Bội chung nhỏ nhất', 'Cho A,B nguyên dương, tính BCNN(A,B).', 'A B (1 ≤ A,B ≤ 10^9)', 'BCNN(A,B)', '6 8', '24', 'Vận dụng', [('3 7', '21'), ('10 10', '10'), ('12 18', '36')]), (3, 'Chu vi hình chữ nhật', 'Cho hai cạnh nguyên dương A,B, tính chu vi hình chữ nhật.', 'A B (1 ≤ A,B ≤ 10^9)', 'Chu vi', '3 5', '16', 'Cơ bản', [('1 1', '4'), ('10 20', '60'), ('100 7', '214')]), (3, 'Diện tích tam giác vuông', 'Cho hai cạnh góc vuông A,B nguyên dương. In diện tích dưới dạng số thực với đúng 1 chữ số thập phân.', 'A B (1 ≤ A,B ≤ 10^6)', 'Diện tích với 1 chữ số sau dấu chấm', '3 4', '6.0', 'Vận dụng', [('1 1', '0.5'), ('2 7', '7.0'), ('10 10', '50.0')]), (3, 'Ba cạnh tam giác', 'Cho ba số nguyên dương A,B,C. Kiểm tra chúng tạo thành tam giác không suy biến.', 'A B C (1 ≤ A,B,C ≤ 10^9)', 'YES hoặc NO', '3 4 5', 'YES', 'Cơ bản', [('1 2 3', 'NO'), ('5 5 9', 'YES'), ('1 1 3', 'NO')]), (4, 'Đảo ngược xâu', 'Nhập một dòng ký tự không chứa ký tự xuống dòng, in các ký tự theo thứ tự ngược.', 'Một dòng độ dài không quá 10000', 'Xâu đảo ngược', 'abc123', '321cba', 'Cơ bản', [('hello', 'olleh'), ('A', 'A'), ('a b', 'b a')]), (4, 'Đếm nguyên âm', 'Cho xâu chỉ gồm chữ cái tiếng Anh, đếm số nguyên âm a,e,i,o,u không phân biệt hoa thường.', 'Một dòng không quá 10000 ký tự', 'Số nguyên âm', 'Hello', '2', 'Cơ bản', [('AI', '2'), ('xyz', '0'), ('Education', '5')]), (4, 'Phần tử lớn nhất', 'Cho N số nguyên, tìm phần tử lớn nhất.', 'Dòng 1 N (1 ≤ N ≤ 100000); dòng 2 gồm N số nguyên', 'Giá trị lớn nhất', '5\n2 -1 7 3 4', '7', 'Cơ bản', [('1\n-9', '-9'), ('4\n-3 -1 -2 -4', '-1'), ('3\n10 10 5', '10')]), (4, 'Tổng đường chéo chính', 'Cho ma trận vuông N×N số nguyên. Tính tổng các phần tử trên đường chéo chính.', 'Dòng 1 N (1 ≤ N ≤ 100); sau đó N hàng, mỗi hàng N số nguyên', 'Tổng đường chéo chính', '2\n1 2\n3 4', '5', 'Vận dụng', [('1\n9', '9'), ('3\n1 2 3\n4 5 6\n7 8 9', '15'), ('2\n-1 5\n4 -2', '-3')]), (5, 'Tổng các số chẵn trong dãy', 'Cho N số nguyên. Tính tổng các phần tử chẵn.', 'Dòng 1 N (1 ≤ N ≤ 100000), dòng 2 gồm N số', 'Tổng các số chẵn', '5\n1 2 3 4 5', '6', 'Cơ bản', [('3\n1 3 5', '0'), ('4\n-2 0 3 8', '6'), ('1\n10', '10')]), (5, 'Dãy tăng liên tiếp dài nhất', 'Cho N số nguyên. Tìm độ dài đoạn liên tiếp dài nhất tăng nghiêm ngặt.', 'Dòng 1 N (1 ≤ N ≤ 100000), dòng 2 N số nguyên', 'Độ dài đoạn tăng dài nhất', '6\n1 2 5 3 4 6', '3', 'Nâng cao', [('1\n9', '1'), ('5\n5 4 3 2 1', '1'), ('4\n1 2 3 4', '4')]), (6, 'Tìm kiếm nhị phân', 'Cho dãy N số nguyên đã sắp xếp tăng không giảm và giá trị X. In vị trí đầu tiên của X (đánh số từ 1), hoặc -1.', 'Dòng 1 N X; dòng 2 N số nguyên (N ≤ 100000)', 'Vị trí đầu tiên, hoặc -1', '5 7\n1 3 7 7 9', '3', 'Vận dụng', [('4 4\n1 2 3 5', '-1'), ('1 8\n8', '1'), ('5 2\n2 2 2 2 2', '1')]), (6, 'Phần tử nhỏ thứ K', 'Cho N số nguyên và K, tìm số nhỏ thứ K sau khi sắp xếp tăng dần, tính cả phần tử lặp.', 'Dòng 1 N K (1 ≤ K ≤ N ≤ 100000); dòng 2 N số', 'Số nhỏ thứ K', '5 3\n5 1 4 3 2', '3', 'Vận dụng', [('3 2\n7 7 1', '7'), ('1 1\n-5', '-5'), ('4 4\n2 1 3 2', '3')]), (6, 'Đếm phần tử khác nhau', 'Cho N số nguyên, đếm số giá trị phân biệt.', 'Dòng 1 N (1 ≤ N ≤ 100000); dòng 2 N số', 'Số giá trị phân biệt', '6\n1 2 2 3 1 4', '4', 'Vận dụng', [('1\n7', '1'), ('4\n5 5 5 5', '1'), ('5\n-1 0 1 -1 0', '3')]), (7, 'Đếm chuỗi nhị phân độ dài N', 'Tính số chuỗi nhị phân có độ dài N, kể cả chuỗi toàn số 0.', 'N (0 ≤ N ≤ 60)', 'Số chuỗi nhị phân', '3', '8', 'Vận dụng', [('0', '1'), ('1', '2'), ('10', '1024')]), (7, 'Lũy thừa nhanh modulo', 'Cho A,N,M, tính A^N mod M.', 'A N M (0 ≤ A ≤ 10^9; 0 ≤ N ≤ 10^9; 1 ≤ M ≤ 10^9)', 'Kết quả chia dư', '2 10 1000', '24', 'Nâng cao', [('10 0 7', '1'), ('3 3 5', '2'), ('5 4 1', '0')]), (7, 'Tổng các tập con', 'Cho N số nguyên (N ≤ 20) và số S. In YES nếu tồn tại một tập con (có thể rỗng) có tổng bằng S, ngược lại NO.', 'Dòng 1 N S; dòng 2 N số nguyên', 'YES hoặc NO', '3 5\n1 2 4', 'YES', 'Nâng cao', [('3 8\n1 2 4', 'NO'), ('2 0\n2 4', 'YES'), ('4 6\n-1 3 4 2', 'YES')])]
@@ -191,6 +219,11 @@ class Handler(BaseHTTPRequestHandler):
    u=get_user(self.headers.get('Cookie',''))
    if p=='/api/me':return self.send(200,{'user':u,'judgeReady':bool(JUDGE_URL)})
    if p=='/api/judge/status':return self.send(200,judge_health())
+   if p=='/api/catalog':
+    with db() as c:
+     ts=[dict(x) for x in c.execute('SELECT id,title,description FROM topics ORDER BY id')]
+     ps=[dict(x) for x in c.execute('SELECT p.id,p.topic_id,p.title,p.description,p.input_spec,p.output_spec,p.sample_in,p.sample_out,p.difficulty,t.title AS topic FROM problems p JOIN topics t ON t.id=p.topic_id ORDER BY p.id')]
+    return self.send(200,{'topics':ts,'problems':ps})
    if not u:return self.fail('Vui lòng đăng nhập.',401)
    with db() as c:
     if p=='/api/classes':
@@ -226,6 +259,21 @@ class Handler(BaseHTTPRequestHandler):
      except:return self.fail('Mã bài không hợp lệ.')
      if not r:return self.fail('Không tìm thấy bài.',404)
      return self.send(200,{'item':dict(r)})
+    if p=='/api/demo/evidence':
+     # Preview-only: isolated from real submissions, scores and analytics.
+     if not PUBLIC_PREVIEW or u['username'] not in ('giaovien','hocsinh'):return self.fail('Không có dữ liệu minh họa.',404)
+     if u['role']=='student':filter_sql='WHERE e.user_id=?';params=(u['id'],)
+     else:
+      filter_sql='WHERE e.user_id IN (SELECT m.student_id FROM class_members m JOIN classes cl ON m.class_id=cl.id WHERE cl.teacher_id=?)';params=(u['id'],)
+     q='''SELECT e.id,e.problem_id,p.title AS problem,e.language,e.verdict,e.score,e.created_at,u.name AS student
+          FROM demo_judge_events e JOIN problems p ON e.problem_id=p.id JOIN users u ON e.user_id=u.id '''
+     items=[dict(x) for x in c.execute(q+filter_sql+' ORDER BY e.created_at DESC',params)]
+     totals={'count':len(items),'ac':sum(x['verdict']=='AC' for x in items),'wa':sum(x['verdict']=='WA' for x in items),'ce':sum(x['verdict']=='CE' for x in items),'tle':sum(x['verdict']=='TLE' for x in items)}
+     by_problem={}
+     for x in items:
+      a=by_problem.setdefault(x['problem_id'],{'id':x['problem_id'],'title':x['problem'],'attempts':0,'best':0})
+      a['attempts']+=1;a['best']=max(a['best'],x['score'])
+     return self.send(200,{'demo':True,'label':'DỮ LIỆU MINH HỌA – KHÔNG PHẢI KẾT QUẢ CHẤM THẬT','items':items,'totals':totals,'byProblem':list(by_problem.values())})
     if p=='/api/submissions':
      q='''SELECT s.id,s.problem_id,p.title AS problem,s.language,s.verdict,s.score,s.created_at,u.name AS student FROM submissions s JOIN problems p ON p.id=s.problem_id JOIN users u ON u.id=s.user_id'''
      if u['role']=='student':q+=' WHERE s.user_id=?';rows=c.execute(q+' ORDER BY s.id DESC LIMIT 200',(u['id'],))
@@ -250,9 +298,9 @@ class Handler(BaseHTTPRequestHandler):
   if p=='/api/login':
    with db() as c:r=c.execute('SELECT * FROM users WHERE username=?',(str(d.get('username','')).strip(),)).fetchone()
    if not r or not check_pw(str(d.get('password','')),r['password']):return self.fail('Sai tài khoản hoặc mật khẩu.',401)
-   return self.send(200,{'ok':True},'session='+token(r)+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200')
+   return self.send(200,{'ok':True},'session='+token(r)+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200'+('; Secure' if PUBLIC_PREVIEW else ''))
   if p=='/api/register' and PUBLIC_PREVIEW:return self.fail('Đăng ký chưa được mở trong bản online xem thử.',403)
-  if p=='/api/logout':return self.send(200,{'ok':True},'session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0')
+  if p=='/api/logout':return self.send(200,{'ok':True},'session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'+('; Secure' if PUBLIC_PREVIEW else ''))
   u=self.auth()
   if not u:return
   # Restrict writes to local same-origin browser requests.
